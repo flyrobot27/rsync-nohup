@@ -1,4 +1,5 @@
 import argparse
+from pathlib import Path
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Detached rsync launcher and manager with logging, retry, process listing, and stop control.")
@@ -7,9 +8,9 @@ def main() -> int:
     subparsers = parser.add_subparsers(dest="command", required=True)
     # launch command
     launch_parser = subparsers.add_parser("launch", help="Launch a new rsync process")
-    launch_parser.add_argument("source", help="Source path for rsync")
-    launch_parser.add_argument("destination", help="Destination path for rsync")
-    launch_parser.add_argument("--log-file", help="Path to log file for rsync output", default="rsync_nohup.log")
+    launch_parser.add_argument("source",  type=Path, help="Source path for rsync")
+    launch_parser.add_argument("destination", type=Path, help="Destination path for rsync")
+    launch_parser.add_argument("--log-file", type=Path, help="Path to log file for rsync output. Default to /var/log/rsync_nohup.log", default=Path("/var/log/rsync_nohup.log"))
     launch_parser.add_argument("--max-backoff", type=int, help="Maximum backoff time in seconds for retries (default: 60)", default=60)
     launch_parser.add_argument("--retries", type=int, help="Number of retry attempts for failed rsync processes. 0 means unlimited. Default to 1 (no retries)", default=1)
     launch_parser.add_argument("--options", help="Additional rsync options", default="")
@@ -24,6 +25,8 @@ def main() -> int:
     stop_parser.add_argument("--force", action="store_true", help="Force stop the process (use SIGKILL instead of SIGTERM)")
 
     args = parser.parse_args()
+
+    print(args)
 
 if __name__ == "__main__":
     try:
