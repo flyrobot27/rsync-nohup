@@ -29,6 +29,16 @@ def rsync_locations_accessible(source: Path, destination: Path) -> Tuple[bool, s
 
 
 def is_sudo_required(source: Path, destination: Path) -> bool:
+    """
+    Check if sudo is required in order to read source and write to destination
+
+    Args:
+        source (Path): path to source
+        destination (Path): path to destination
+
+    Returns:
+        bool: True if sudo is required. False otherwise.
+    """
     if os.geteuid() == 0:
         return False  # Already running as root, no need for sudo
 
