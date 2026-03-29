@@ -1,9 +1,10 @@
 import argparse
+from collections.abc import Sequence
 from pathlib import Path
 from launcher.launcher import launch_rsync
-from process.process import list_processes, stop_process
+from process.manager import list_processes, stop_process
 
-def main() -> int:
+def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Detached rsync launcher and manager with logging, retry, process listing, and stop control.")
 
     # subparsers for different commands
@@ -26,7 +27,7 @@ def main() -> int:
     stop_parser.add_argument("pid", type=int, help="PID of the rsync process to stop")
     stop_parser.add_argument("--force", action="store_true", help="Force stop the process (use SIGKILL instead of SIGTERM)")
 
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     match args.command:
         case "launch":

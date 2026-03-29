@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 from utils.access import is_sudo_required, rsync_locations_accessible
+from process.process import launch_worker_process
 import subprocess
 
 def launch_rsync(source: Path, destination: Path, log_file: Path | None, max_backoff: int, retries: int, options: list[str]) -> int:
@@ -39,49 +40,18 @@ def launch_rsync(source: Path, destination: Path, log_file: Path | None, max_bac
         
         cmd = ["sudo", "-n", *cmd]
     
-    # create log file if specified and check if it's writable
-    if log_file is not None:
-        # try to create the log file if it doesn't exist, and check if it's writable
-        try:
-            log_file.parent.mkdir(parents=True, exist_ok=True)
-            if not log_file.exists():
-                log_file.touch()
-            else:
-                print("Warning: log file already exists. Appending to existing file.")
-
-            if not log_file.is_file() or not os.access(log_file, os.W_OK):
-                print(f"Error: Log file {log_file} is not writable.")
-                return 1
-        except Exception as e:
-            print(f"Error: Could not create or access log file {log_file}: {e}")
-            return 1
-    
-    # launch the rsync command in a detached process
     try:
-        if log_file is None:
-            proc = subprocess.Popen(
-                cmd,
-                stdin=subprocess.DEVNULL,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-                start_new_session=True,
-                close_fds=True,
-            )
-        else:
-            log_file.parent.mkdir(parents=True, exist_ok=True)
-            with open(log_file, "a", encoding="utf-8") as log_handle:
-                proc = subprocess.Popen(
-                    cmd,
-                    stdin=subprocess.DEVNULL,
-                    stdout=log_handle,
-                    stderr=subprocess.STDOUT,
-                    start_new_session=True,
-                    close_fds=True,
-                )
-
-        print(f"Started detached rsync process. PID: {proc.pid}")
+        proc = launch_worker_process(
+            source=source,
+            destination=destination,
+            log_file=log_file,
+            max_backoff=max_backoff,
+            retries=retries,
+            options=options,
+            run_as_root=sudo_required,
+        )
+        print(f"Launched rsync worker with PID {proc.pid}")
         return 0
-
     except Exception as e:
-        print(f"Error: Failed to start rsync: {e}")
+        print(f"Error launching rsync worker: {e}")
         return 1
