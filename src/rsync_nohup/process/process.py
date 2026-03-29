@@ -7,8 +7,8 @@ import sys
 import time
 from pathlib import Path
 from typing import Sequence
-from utils.helper import log_line, build_rsync_command
-from utils.exit_codes import ExitCode
+from rsync_nohup.utils.helper import log_line, build_rsync_command
+from rsync_nohup.utils.exit_codes import ExitCode
 
 _CURRENT_CHILD: subprocess.Popen | None = None
 _STOP_REQUESTED = False
@@ -75,7 +75,7 @@ def worker_main(
         while True:
             if _STOP_REQUESTED:
                 log_line(log_handle, "stop requested before starting next rsync attempt")
-                return 143
+                return ExitCode.SIGTERM
 
             cmd = build_rsync_command(source, destination, options)
             log_line(log_handle, f"starting attempt {attempt}: {' '.join(cmd)}")
@@ -85,7 +85,6 @@ def worker_main(
                 stdin=subprocess.DEVNULL,
                 stdout=log_handle,
                 stderr=subprocess.STDOUT,
-                close_fds=True,
             )
             returncode = _CURRENT_CHILD.wait()
             _CURRENT_CHILD = None
@@ -169,10 +168,10 @@ def launch_worker_process(
     return subprocess.Popen(
         cmd,
         stdin=subprocess.DEVNULL,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-        start_new_session=True,
-        close_fds=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        bufsize=1,
     )
 
 

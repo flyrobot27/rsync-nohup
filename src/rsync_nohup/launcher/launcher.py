@@ -1,8 +1,8 @@
 import os
 from pathlib import Path
-from utils.access import is_sudo_required, rsync_locations_accessible
-from process.process import launch_worker_process
-from utils.exit_codes import ExitCode
+from rsync_nohup.utils.access import is_sudo_required, rsync_locations_accessible
+from rsync_nohup.process.process import launch_worker_process
+from rsync_nohup.utils.exit_codes import ExitCode
 import subprocess
 
 def launch_rsync(source: Path, destination: Path, log_file: Path | None, max_backoff: int, retries: int, options: list[str]) -> ExitCode:
@@ -26,6 +26,9 @@ def launch_rsync(source: Path, destination: Path, log_file: Path | None, max_bac
         print(f"Error: {error_message}")
         return ExitCode.GENERIC_ERROR
 
+    source = source.resolve()
+    destination = destination.resolve()
+
     sudo_required = is_sudo_required(source, destination)
 
     if sudo_required:
@@ -47,6 +50,15 @@ def launch_rsync(source: Path, destination: Path, log_file: Path | None, max_bac
             run_as_root=sudo_required,
         )
         print(f"Launched rsync worker with PID {proc.pid}")
+        stdout, stderr = proc.communicate()
+
+        if stdout:
+            print(stdout)
+
+        if stderr:
+            print(stderr)
+            return ExitCode.GENERIC_ERROR
+
         return ExitCode.SUCCESS
     except Exception as e:
         print(f"Error launching rsync worker: {e}")

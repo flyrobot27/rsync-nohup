@@ -1,5 +1,5 @@
 
-from utils.exit_codes import ExitCode
+from rsync_nohup.utils.exit_codes import ExitCode
 
 
 def list_processes(watch_interval: float | None) -> ExitCode:

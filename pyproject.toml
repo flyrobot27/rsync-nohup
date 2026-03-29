@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rsync-nohup"
+version = "0.1.0"
+description = "Detached rsync launcher and manager"
+requires-python = ">=3.10"
+
+[project.scripts]
+rsync-nohup = "rsync_nohup.__main__:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]

@@ -1,9 +1,9 @@
 import argparse
 from collections.abc import Sequence
 from pathlib import Path
-from launcher.launcher import launch_rsync
-from process.manager import list_processes, stop_process
-from utils.exit_codes import ExitCode
+from rsync_nohup.launcher.launcher import launch_rsync
+from rsync_nohup.process.manager import list_processes, stop_process
+from rsync_nohup.utils.exit_codes import ExitCode
 
 def main(argv: Sequence[str] | None = None) -> ExitCode:
     parser = argparse.ArgumentParser(description="Detached rsync launcher and manager with logging, retry, process listing, and stop control.")
