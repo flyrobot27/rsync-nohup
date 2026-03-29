@@ -2,9 +2,10 @@ import os
 from pathlib import Path
 from utils.access import is_sudo_required, rsync_locations_accessible
 from process.process import launch_worker_process
+from utils.exit_codes import ExitCode
 import subprocess
 
-def launch_rsync(source: Path, destination: Path, log_file: Path | None, max_backoff: int, retries: int, options: list[str]) -> int:
+def launch_rsync(source: Path, destination: Path, log_file: Path | None, max_backoff: int, retries: int, options: list[str]) -> ExitCode:
     """
     launch rsync worker process
 
@@ -23,12 +24,9 @@ def launch_rsync(source: Path, destination: Path, log_file: Path | None, max_bac
     accessible, error_message = rsync_locations_accessible(source, destination)
     if not accessible:
         print(f"Error: {error_message}")
-        return 1
+        return ExitCode.GENERIC_ERROR
 
     sudo_required = is_sudo_required(source, destination)
-
-    # Build the rsync command
-    cmd = ["rsync", *options, str(source), str(destination)]
 
     if sudo_required:
         try:
@@ -36,9 +34,7 @@ def launch_rsync(source: Path, destination: Path, log_file: Path | None, max_bac
             subprocess.run(["sudo", "-v"], check=True)
         except subprocess.CalledProcessError:
             print("Error: Sudo access is required but not granted.")
-            return 1
-        
-        cmd = ["sudo", "-n", *cmd]
+            return ExitCode.GENERIC_ERROR
     
     try:
         proc = launch_worker_process(
@@ -51,7 +47,7 @@ def launch_rsync(source: Path, destination: Path, log_file: Path | None, max_bac
             run_as_root=sudo_required,
         )
         print(f"Launched rsync worker with PID {proc.pid}")
-        return 0
+        return ExitCode.SUCCESS
     except Exception as e:
         print(f"Error launching rsync worker: {e}")
-        return 1
+        return ExitCode.GENERIC_ERROR

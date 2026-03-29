@@ -3,8 +3,9 @@ from collections.abc import Sequence
 from pathlib import Path
 from launcher.launcher import launch_rsync
 from process.manager import list_processes, stop_process
+from utils.exit_codes import ExitCode
 
-def main(argv: Sequence[str] | None = None) -> int:
+def main(argv: Sequence[str] | None = None) -> ExitCode:
     parser = argparse.ArgumentParser(description="Detached rsync launcher and manager with logging, retry, process listing, and stop control.")
 
     # subparsers for different commands
@@ -38,10 +39,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             return stop_process(args.pid, args.force)
         case _:
             parser.error("Unknown command")
-            return 2
+            return ExitCode.INVALID_ARGUMENTS
 
 if __name__ == "__main__":
-    try:
-        raise SystemExit(main())
-    except KeyboardInterrupt:
-        raise SystemExit(130)
+    raise SystemExit(main())

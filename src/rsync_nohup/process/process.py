@@ -7,25 +7,11 @@ import sys
 import time
 from pathlib import Path
 from typing import Sequence
-
-RETRYABLE_EXIT_CODES = {20}  # rsync: received SIGINT/SIGTERM/SIGHUP
+from utils.helper import log_line, build_rsync_command
+from utils.exit_codes import ExitCode
 
 _CURRENT_CHILD: subprocess.Popen | None = None
 _STOP_REQUESTED = False
-
-
-def log_line(handle, message: str) -> None:
-    timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
-    handle.write(f"[{timestamp}] {message}\n")
-    handle.flush()
-
-
-def build_rsync_command(source: Path, destination: Path, options: list[str]) -> list[str]:
-    return ["rsync", *options, str(source), str(destination)]
-
-
-def should_retry(returncode: int) -> bool:
-    return returncode in RETRYABLE_EXIT_CODES
 
 
 def _request_stop(signum, frame) -> None:
@@ -46,6 +32,20 @@ def worker_main(
     retries: int,
     options: list[str],
 ) -> int:
+    """
+    Main worker with exponential backoff
+
+    Args:
+        source (Path): path of source
+        destination (Path): path of destination
+        log_file (Path | None): path of log file, if provided
+        max_backoff (int): maximum backoff time
+        retries (int): number of retries
+        options (list[str]): additional rsync options
+
+    Returns:
+        int: exit code
+    """
     global _CURRENT_CHILD, _STOP_REQUESTED
 
     signal.signal(signal.SIGTERM, _request_stop)
@@ -92,15 +92,15 @@ def worker_main(
 
             if _STOP_REQUESTED:
                 log_line(log_handle, f"worker stopping after child exit code {returncode}")
-                return 143
+                return ExitCode.SIGTERM
 
             if returncode == 0:
                 log_line(log_handle, "rsync completed successfully")
-                return 0
+                return ExitCode.SUCCESS
 
             log_line(log_handle, f"rsync exited with code {returncode}")
 
-            if not should_retry(returncode):
+            if returncode != ExitCode.RSYNC_RETRY:
                 log_line(log_handle, "exit code is not retryable; worker exiting")
                 return returncode
 
@@ -176,7 +176,7 @@ def launch_worker_process(
     )
 
 
-def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
+def main(argv: Sequence[str] | None = None) -> ExitCode:
     parser = argparse.ArgumentParser(description="Internal rsync worker process")
     parser.add_argument("--worker", action="store_true", help=argparse.SUPPRESS)
     parser.add_argument("source", type=Path)
@@ -189,15 +189,12 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         nargs=argparse.REMAINDER,
         help="Extra rsync args after --",
     )
-    return parser.parse_args(argv)
 
-
-def main(argv: Sequence[str] | None = None) -> int:
-    args = parse_args(argv)
+    args = parser.parse_args(argv)
 
     if not args.worker:
         print("This module is intended to be launched internally with --worker.", file=sys.stderr)
-        return 2
+        return ExitCode.INVALID_USAGE
 
     options = args.options or []
     if options and options[0] == "--":

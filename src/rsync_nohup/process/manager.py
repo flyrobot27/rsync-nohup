@@ -1,6 +1,9 @@
 
-def list_processes(watch_interval: float | None) -> int:
-    return 0
+from utils.exit_codes import ExitCode
 
-def stop_process(pid: int, force: bool) -> int:
-    return 0
+
+def list_processes(watch_interval: float | None) -> ExitCode:
+    return ExitCode.SUCCESS
+
+def stop_process(pid: int, force: bool) -> ExitCode:
+    return ExitCode.SUCCESS
