@@ -40,6 +40,7 @@ def launch_rsync(source: Path, destination: Path, log_file: Path | None, max_bac
             return ExitCode.GENERIC_ERROR
     
     try:
+        print(f"Launching rsync from {source} to {destination} with log file {log_file}, max backoff {max_backoff}, retries {retries}, and options {options}")
         proc = launch_worker_process(
             source=source,
             destination=destination,
