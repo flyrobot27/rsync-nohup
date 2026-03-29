@@ -159,7 +159,7 @@ def launch_worker_process(
         cmd.extend(["--log-file", str(log_file)])
 
     if options:
-        cmd.append("--")
+        cmd.append("--options")
         cmd.extend(options)
 
     if run_as_root and os.geteuid() != 0:
@@ -168,10 +168,9 @@ def launch_worker_process(
     return subprocess.Popen(
         cmd,
         stdin=subprocess.DEVNULL,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-        bufsize=1,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        start_new_session=True,
     )
 
 
@@ -183,14 +182,9 @@ def main(argv: Sequence[str] | None = None) -> ExitCode:
     parser.add_argument("--log-file", type=Path)
     parser.add_argument("--max-backoff", type=int, default=60)
     parser.add_argument("--retries", type=int, default=1)
-    parser.add_argument(
-        "options",
-        nargs=argparse.REMAINDER,
-        help="Extra rsync args after --",
-    )
+    parser.add_argument("--options", nargs=argparse.REMAINDER)
 
     args = parser.parse_args(argv)
-
     if not args.worker:
         print("This module is intended to be launched internally with --worker.", file=sys.stderr)
         return ExitCode.INVALID_USAGE
