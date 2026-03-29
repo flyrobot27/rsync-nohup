@@ -41,8 +41,6 @@ def main() -> int:
 
 if __name__ == "__main__":
     try:
-        status = main()
+        raise SystemExit(main())
     except KeyboardInterrupt:
-        exit()
-    else:
-        raise SystemExit(status)
+        raise SystemExit(130)
