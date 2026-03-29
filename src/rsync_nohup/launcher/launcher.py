@@ -51,15 +51,6 @@ def launch_rsync(source: Path, destination: Path, log_file: Path | None, max_bac
             run_as_root=sudo_required,
         )
         print(f"Launched rsync worker with PID {proc.pid}")
-        stdout, stderr = proc.communicate()
-
-        if stdout:
-            print(stdout)
-
-        if stderr:
-            print(stderr)
-            return ExitCode.GENERIC_ERROR
-
         return ExitCode.SUCCESS
     except Exception as e:
         print(f"Error launching rsync worker: {e}")
