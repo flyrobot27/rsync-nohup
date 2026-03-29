@@ -1,5 +1,7 @@
 import argparse
 from pathlib import Path
+from launcher.launcher import launch_rsync
+from process.process import list_processes, stop_process
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Detached rsync launcher and manager with logging, retry, process listing, and stop control.")
@@ -10,7 +12,7 @@ def main() -> int:
     launch_parser = subparsers.add_parser("launch", help="Launch a new rsync process")
     launch_parser.add_argument("source",  type=Path, help="Source path for rsync")
     launch_parser.add_argument("destination", type=Path, help="Destination path for rsync")
-    launch_parser.add_argument("--log-file", type=Path, help="Path to log file for rsync output. Default to /var/log/rsync_nohup.log", default=Path("/var/log/rsync_nohup.log"))
+    launch_parser.add_argument("--log-file", type=Path, help="Path to log file for rsync output. If not specified, no logging is performed.", default=None)
     launch_parser.add_argument("--max-backoff", type=int, help="Maximum backoff time in seconds for retries (default: 60)", default=60)
     launch_parser.add_argument("--retries", type=int, help="Number of retry attempts for failed rsync processes. 0 means unlimited. Default to 1 (no retries)", default=1)
     launch_parser.add_argument("--options", nargs=argparse.REMAINDER, help="Additional arguments to pass to rsync (e.g., -avz, --exclude, etc.). Ensure to put this last.")
@@ -26,7 +28,16 @@ def main() -> int:
 
     args = parser.parse_args()
 
-    print(args)
+    match args.command:
+        case "launch":
+            return launch_rsync(args.source, args.destination, args.log_file, args.max_backoff, args.retries, args.options)
+        case "list":
+            return list_processes(args.watch)
+        case "stop":
+            return stop_process(args.pid, args.force)
+        case _:
+            parser.error("Unknown command")
+            return 2
 
 if __name__ == "__main__":
     try:
