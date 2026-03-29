@@ -46,6 +46,9 @@ def launch_rsync(source: Path, destination: Path, log_file: Path | None, max_bac
             log_file.parent.mkdir(parents=True, exist_ok=True)
             if not log_file.exists():
                 log_file.touch()
+            else:
+                print("Warning: log file already exists. Appending to existing file.")
+
             if not log_file.is_file() or not os.access(log_file, os.W_OK):
                 print(f"Error: Log file {log_file} is not writable.")
                 return 1
