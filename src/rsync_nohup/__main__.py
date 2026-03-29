@@ -17,7 +17,7 @@ def main(argv: Sequence[str] | None = None) -> ExitCode:
     launch_parser.add_argument("--log-file", type=Path, help="Path to log file for rsync output. If not specified, no logging is performed.", default=None)
     launch_parser.add_argument("--max-backoff", type=int, help="Maximum backoff time in seconds for retries (default: 60)", default=60)
     launch_parser.add_argument("--retries", type=int, help="Number of retry attempts for failed rsync processes. 0 means unlimited. Default to 1 (no retries)", default=1)
-    launch_parser.add_argument("--options", nargs=argparse.REMAINDER, help="Additional arguments to pass to rsync (e.g., -avz, --exclude, etc.). Ensure to put this last.")
+    launch_parser.add_argument("--options", nargs=argparse.REMAINDER, help="Additional arguments to pass to rsync (e.g., -avz, --exclude, etc.). Using `-a` recommended. Ensure to put this last.")
 
     # list command
     list_parser = subparsers.add_parser("list", help="List all running rsync processes")
