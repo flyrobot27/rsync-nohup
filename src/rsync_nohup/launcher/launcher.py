@@ -66,7 +66,7 @@ def launch_rsync(source: Path, destination: Path, log_file: Path | None, max_bac
             )
         else:
             log_file.parent.mkdir(parents=True, exist_ok=True)
-            with open(log_file, "ab", buffering=0) as log_handle:
+            with open(log_file, "a", encoding="utf-8") as log_handle:
                 proc = subprocess.Popen(
                     cmd,
                     stdin=subprocess.DEVNULL,
