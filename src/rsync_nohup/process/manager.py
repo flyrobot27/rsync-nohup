@@ -7,12 +7,11 @@ import time
 from collections import defaultdict
 from dataclasses import dataclass
 
-
 from rsync_nohup.utils.exit_codes import ExitCode
 
 
 MANAGED_MODULE = "rsync_nohup.process.process"
-MANAGED_SCRIPT_NAME = "process.py"
+MANAGED_SCRIPT_BASENAME = "process.py"
 
 
 @dataclass(slots=True)
@@ -107,14 +106,15 @@ def _is_managed_worker(proc: ProcInfo) -> bool:
     argv = proc.cmdline
 
     if "-m" in argv:
-        idx = argv.index("-m")
-        if idx + 1 < len(argv) and argv[idx + 1] == MANAGED_MODULE:
-            return True
+        try:
+            idx = argv.index("-m")
+            if idx + 1 < len(argv) and argv[idx + 1] == MANAGED_MODULE:
+                return True
+        except ValueError:
+            pass
 
-    # Fallback if launched by file path instead of -m
     for token in argv[1:3]:
-        name = os.path.basename(token)
-        if name == MANAGED_SCRIPT_NAME:
+        if os.path.basename(token) == MANAGED_SCRIPT_BASENAME:
             return True
 
     return False
@@ -169,7 +169,7 @@ def _extract_worker_metadata(cmdline: list[str]) -> tuple[str, str, str]:
 
 
 def _collect_jobs(processes: dict[int, ProcInfo]) -> tuple[list[ManagedJob], list[ProcInfo]]:
-    children_map = _children_map(processes)
+    children = _children_map(processes)
 
     workers = sorted(
         (proc for proc in processes.values() if _is_managed_worker(proc)),
@@ -181,7 +181,7 @@ def _collect_jobs(processes: dict[int, ProcInfo]) -> tuple[list[ManagedJob], lis
 
     for worker in workers:
         source, destination, log_file = _extract_worker_metadata(worker.cmdline)
-        descendants = _descendants_of(worker.pid, children_map)
+        descendants = _descendants_of(worker.pid, children)
         rsync_children = sorted(
             (proc for proc in descendants if _is_rsync_process(proc)),
             key=lambda p: p.pid,
@@ -237,11 +237,10 @@ def _render(managed_jobs: list[ManagedJob], unmanaged_rsync: list[ProcInfo]) -> 
         lines.append("None")
     else:
         for job in managed_jobs:
-            rsync_pids = ", ".join(str(p.pid) for p in job.rsync_children) or "-"
+            child_pids = ", ".join(str(p.pid) for p in job.rsync_children) or "-"
             status = "running" if job.rsync_children else "waiting/backoff"
             lines.append(
-                f"worker={job.worker.pid} rsync={rsync_pids} "
-                f"user={_username(job.worker.uid)} status={status}"
+                f"worker={job.worker.pid} rsync={child_pids} user={_username(job.worker.uid)} status={status}"
             )
             lines.append(f"  {job.source} -> {job.destination}")
             lines.append(f"  log: {job.log_file}")
@@ -257,21 +256,24 @@ def _render(managed_jobs: list[ManagedJob], unmanaged_rsync: list[ProcInfo]) -> 
         lines.append("None")
     else:
         for proc in unmanaged_rsync:
-            lines.append(
-                f"pid={proc.pid} ppid={proc.ppid} user={_username(proc.uid)}"
-            )
+            lines.append(f"pid={proc.pid} ppid={proc.ppid} user={_username(proc.uid)}")
             lines.append(f"  cmd: {_short_cmdline(proc.cmdline)}")
             lines.append("")
 
     return "\n".join(lines).rstrip() + "\n"
 
 
-def _clear_screen() -> None:
-    print("\033[2J\033[H", end="")
-
-
 def _pid_exists(pid: int) -> bool:
     return os.path.exists(f"/proc/{pid}")
+
+
+def _wait_for_exit(pid: int, timeout: float = 10.0) -> bool:
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        if not _pid_exists(pid):
+            return True
+        time.sleep(0.25)
+    return not _pid_exists(pid)
 
 
 def _send_signal(proc: ProcInfo, sig: signal.Signals) -> None:
@@ -287,15 +289,6 @@ def _send_signal(proc: ProcInfo, sig: signal.Signals) -> None:
         check=True,
         stdin=subprocess.DEVNULL,
     )
-
-
-def _wait_for_exit(pid: int, timeout: float = 10.0) -> bool:
-    deadline = time.time() + timeout
-    while time.time() < deadline:
-        if not _pid_exists(pid):
-            return True
-        time.sleep(0.25)
-    return not _pid_exists(pid)
 
 
 def _resolve_stop_target(
@@ -321,33 +314,16 @@ def _resolve_stop_target(
     return None
 
 
-def list_processes(watch_interval: float | None) -> ExitCode:
+def list_processes(_watch_interval: float | None = None) -> ExitCode:
     """
-    List:
-    1) managed rsync jobs started by this tool
-    2) other currently running rsync processes
+    Print managed rsync jobs and any other currently running rsync processes.
 
-    watch_interval:
-      - None / <= 0: print once
-      - > 0: refresh until Ctrl-C
+    _watch_interval is ignored and only kept for temporary compatibility.
     """
     try:
-        while True:
-            processes = _all_processes()
-            managed_jobs, unmanaged_rsync = _collect_jobs(processes)
-            output = _render(managed_jobs, unmanaged_rsync)
-
-            if watch_interval is not None and watch_interval > 0:
-                _clear_screen()
-                print(time.strftime("%Y-%m-%d %H:%M:%S"))
-                print()
-                print(output, end="")
-                time.sleep(watch_interval)
-            else:
-                print(output, end="")
-                return ExitCode.SUCCESS
-
-    except KeyboardInterrupt:
+        processes = _all_processes()
+        managed_jobs, unmanaged_rsync = _collect_jobs(processes)
+        print(_render(managed_jobs, unmanaged_rsync), end="")
         return ExitCode.SUCCESS
     except Exception as exc:
         print(f"Error listing processes: {exc}")
@@ -358,8 +334,8 @@ def stop_process(pid: int, force: bool) -> ExitCode:
     """
     Stop a process by PID.
 
-    If PID belongs to a managed rsync child, this stops the parent worker instead,
-    so the worker does not immediately retry the rsync.
+    If PID belongs to a managed rsync child, stop the parent worker instead so it
+    does not immediately restart the child.
     """
     try:
         processes = _all_processes()
