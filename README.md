@@ -2,6 +2,14 @@
 
 `rsync-nohup` is a detached `rsync` launcher and manager for long-running transfers. It lets you start `rsync` jobs that keep running after you close the terminal, with optional logging, retry support, process listing, and stop control.
 
+## Requirements
+
+This script is tested against Python 3.11. It should work with Python version down to 3.10.
+
+All libraries used are from Python's standard library.
+
+This script is tested on Ubuntu 22.04, and it should work on other Linux distributions. It will NOT work on Windows or MacOS due to implementation differences in signals and root user privileges.
+
 ## Installation
 
 The preferred installation method is via `pip`.
