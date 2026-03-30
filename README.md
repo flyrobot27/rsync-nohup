@@ -1,5 +1,30 @@
 # rsync-nohup
 
+`rsync-nohup` is a detached `rsync` launcher and manager for long-running transfers. It lets you start `rsync` jobs that keep running after you close the terminal, with optional logging, retry support, process listing, and stop control.
+
+## Installation
+
+The preferred installation method is via `pip`.
+
+Install it from the project root:
+
+```bash
+python3 -m pip install .
+```
+
+This performs a normal installation of the current version.
+
+If you only want to install it for your current user:
+
+```bash
+python3 -m pip install --user .
+```
+
+After installation, run it as:
+```bash
+rsync-nohup
+```
+
 ## Usage
 
 ```bash
@@ -104,4 +129,37 @@ Exclude a subdirectory during transfer:
 
 ```bash
 rsync-nohup launch /src/ /dst/ --log-file ~/rsync.log --options -aH --info=progress2 --exclude node_modules
+```
+
+## Demo
+
+Example `list` output:
+
+```text
+rsync-nohup list
+Managed rsync jobs
+===================
+worker=20077 rsync=20083, 20084, 20085 user=ssh-client status=running
+  /mnt/temp -> /mnt/temp-nas
+  log: backup.log
+  cmd: rsync -a /mnt/temp /mnt/temp-nas
+
+Other running rsync processes
+=============================
+None
+```
+
+Example `launch` output:
+
+```text
+rsync-nohup launch --retries 10 /mnt/temp/ /mnt/temp-nas/ --log-file ./backup.log
+Launching rsync from /mnt/temp to /mnt/temp-nas with log file backup.log, max backoff 60, retries 10, and options None
+Launched rsync worker with PID 19497
+```
+
+Example `stop` output:
+
+```text
+rsync-nohup stop 19658
+Stopped managed worker 19658.
 ```
