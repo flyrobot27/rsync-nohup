@@ -15,16 +15,16 @@ def log_line(handle: TextIOWrapper, message: str) -> None:
     handle.write(f"[{timestamp}] {message}\n")
     handle.flush()
 
-def build_rsync_command(source: Path, destination: Path, options: list[str]) -> list[str]:
+def build_rsync_command(source: str, destination: str, options: list[str]) -> list[str]:
     """
     Build the rsync command given the options, and resolve source and destination paths to absolute paths.
 
     Args:
-        source (Path): The source path for rsync.
-        destination (Path): The destination path for rsync.
+        source (str): The source path for rsync.
+        destination (str): The destination path for rsync.
         options (list[str]): A list of additional rsync options.
 
     Returns:
         list[str]: The constructed rsync command.
     """
-    return ["rsync", *options, str(source.resolve()), str(destination.resolve())]
+    return ["rsync", *options, source, destination]
