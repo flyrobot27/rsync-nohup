@@ -12,8 +12,8 @@ def main(argv: Sequence[str] | None = None) -> ExitCode:
     subparsers = parser.add_subparsers(dest="command", required=True)
     # launch command
     launch_parser = subparsers.add_parser("launch", help="Launch a new rsync process")
-    launch_parser.add_argument("source",  type=Path, help="Source path for rsync")
-    launch_parser.add_argument("destination", type=Path, help="Destination path for rsync")
+    launch_parser.add_argument("source",  type=str, help="Source path for rsync")
+    launch_parser.add_argument("destination", type=str, help="Destination path for rsync")
     launch_parser.add_argument("--log-file", type=Path, help="Path to log file for rsync output. If not specified, no logging is performed.", default=None)
     launch_parser.add_argument("--max-backoff", type=int, help="Maximum backoff time in seconds for retries (default: 60)", default=60)
     launch_parser.add_argument("--retries", type=int, help="Number of retry attempts for failed rsync processes. 0 means unlimited. Default to 1 (no retries)", default=1)
@@ -31,7 +31,12 @@ def main(argv: Sequence[str] | None = None) -> ExitCode:
 
     match args.command:
         case "launch":
-            return launch_rsync(args.source, args.destination, args.log_file, args.max_backoff, args.retries, args.options)
+            # check if source and destination has trailing slash
+            source_has_trailing_slash = args.source.endswith("/")
+            destination_has_trailing_slash = args.destination.endswith("/")
+            source = Path(args.source)
+            destination = Path(args.destination)
+            return launch_rsync(source, destination, args.log_file, args.max_backoff, args.retries, args.options, source_has_trailing_slash, destination_has_trailing_slash)
         case "list":
             return list_processes()
         case "stop":

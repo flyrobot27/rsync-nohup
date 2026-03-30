@@ -25,8 +25,8 @@ def _request_stop(signum, frame) -> None:
 
 
 def worker_main(
-    source: Path,
-    destination: Path,
+    source: str,
+    destination: str,
     log_file: Path | None,
     max_backoff: int,
     retries: int,
@@ -36,8 +36,8 @@ def worker_main(
     Main worker with exponential backoff
 
     Args:
-        source (Path): path of source
-        destination (Path): path of destination
+        source (str): path of source
+        destination (str): path of destination
         log_file (Path | None): path of log file, if provided
         max_backoff (int): maximum backoff time
         retries (int): number of retries
@@ -117,8 +117,8 @@ def worker_main(
 
 
 def launch_worker_process(
-    source: Path,
-    destination: Path,
+    source: str,
+    destination: str,
     log_file: Path | None,
     max_backoff: int,
     retries: int,
@@ -130,8 +130,8 @@ def launch_worker_process(
     The launcher should prompt for sudo first if run_as_root=True.
 
     Args:
-        source (Path): path to source
-        destination (Path): path to destination
+        source (str): path to source
+        destination (str): path to destination
         log_file (Path | None): path to log file
         max_backoff (int): maximum backoff time
         retries (int): number of retries
@@ -147,8 +147,8 @@ def launch_worker_process(
         sys.executable,
         str(worker_file),
         "--worker",
-        str(source),
-        str(destination),
+        source,
+        destination,
         "--max-backoff",
         str(max_backoff),
         "--retries",
@@ -177,8 +177,8 @@ def launch_worker_process(
 def main(argv: Sequence[str] | None = None) -> ExitCode:
     parser = argparse.ArgumentParser(description="Internal rsync worker process")
     parser.add_argument("--worker", action="store_true", help=argparse.SUPPRESS)
-    parser.add_argument("source", type=Path)
-    parser.add_argument("destination", type=Path)
+    parser.add_argument("source", type=str)
+    parser.add_argument("destination", type=str)
     parser.add_argument("--log-file", type=Path)
     parser.add_argument("--max-backoff", type=int, default=60)
     parser.add_argument("--retries", type=int, default=1)

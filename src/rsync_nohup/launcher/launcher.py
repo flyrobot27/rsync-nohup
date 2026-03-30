@@ -5,7 +5,7 @@ from rsync_nohup.process.process import launch_worker_process
 from rsync_nohup.utils.exit_codes import ExitCode
 import subprocess
 
-def launch_rsync(source: Path, destination: Path, log_file: Path | None, max_backoff: int, retries: int, options: list[str]) -> ExitCode:
+def launch_rsync(source: Path, destination: Path, log_file: Path | None, max_backoff: int, retries: int, options: list[str], source_has_trailing_slash: bool, destination_has_trailing_slash: bool) -> ExitCode:
     """
     launch rsync worker process
 
@@ -16,6 +16,8 @@ def launch_rsync(source: Path, destination: Path, log_file: Path | None, max_bac
         max_backoff (int): maximum backoff time
         retries (int): number of retries
         options (list[str]): additional rsync options
+        source_has_trailing_slash (bool): whether source has trailing slash
+        destination_has_trailing_slash (bool): whether destination has trailing slash
 
     Returns:
         int: exit code
@@ -39,6 +41,14 @@ def launch_rsync(source: Path, destination: Path, log_file: Path | None, max_bac
             print("Error: Sudo access is required but not granted.")
             return ExitCode.GENERIC_ERROR
     
+    # restore source and destination to original value with trailing slash if it has
+    source = str(source)
+    destination = str(destination) 
+    if source_has_trailing_slash:
+        source += "/"
+    if destination_has_trailing_slash:
+        destination += "/"
+
     try:
         print(f"Launching rsync from {source} to {destination} with log file {log_file}, max backoff {max_backoff}, retries {retries}, and options {options}")
         proc = launch_worker_process(
