@@ -135,8 +135,8 @@ rsync-nohup launch /src/ /dst/ --log-file ~/rsync.log --options -aH --info=progr
 
 Example `list` output:
 
-```text
-rsync-nohup list
+```bash
+$ rsync-nohup list
 Managed rsync jobs
 ===================
 worker=20077 rsync=20083, 20084, 20085 user=ssh-client status=running
@@ -151,15 +151,15 @@ None
 
 Example `launch` output:
 
-```text
-rsync-nohup launch --retries 10 /mnt/temp/ /mnt/temp-nas/ --log-file ./backup.log
+```bash
+$ rsync-nohup launch --retries 10 /mnt/temp/ /mnt/temp-nas/ --log-file ./backup.log
 Launching rsync from /mnt/temp to /mnt/temp-nas with log file backup.log, max backoff 60, retries 10, and options None
 Launched rsync worker with PID 19497
 ```
 
 Example `stop` output:
 
-```text
-rsync-nohup stop 19658
+```bash
+$ rsync-nohup stop 19658
 Stopped managed worker 19658.
 ```
