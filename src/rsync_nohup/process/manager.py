@@ -314,11 +314,9 @@ def _resolve_stop_target(
     return None
 
 
-def list_processes(_watch_interval: float | None = None) -> ExitCode:
+def list_processes() -> ExitCode:
     """
     Print managed rsync jobs and any other currently running rsync processes.
-
-    _watch_interval is ignored and only kept for temporary compatibility.
     """
     try:
         processes = _all_processes()
