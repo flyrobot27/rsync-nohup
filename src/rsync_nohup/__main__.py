@@ -20,8 +20,7 @@ def main(argv: Sequence[str] | None = None) -> ExitCode:
     launch_parser.add_argument("--options", nargs=argparse.REMAINDER, help="Additional arguments to pass to rsync (e.g., -avz, --exclude, etc.). Using `-a` recommended. Ensure to put this last.")
 
     # list command
-    list_parser = subparsers.add_parser("list", help="List all running rsync processes")
-    list_parser.add_argument("--watch", type=float, help="Watch mode: refresh the list every N seconds. Default to 1 second if --watch is provided without a value.", nargs="?", const=1.0)
+    subparsers.add_parser("list", help="List all running rsync processes")
 
     # stop command
     stop_parser = subparsers.add_parser("stop", help="Stop a running rsync process")
@@ -34,7 +33,7 @@ def main(argv: Sequence[str] | None = None) -> ExitCode:
         case "launch":
             return launch_rsync(args.source, args.destination, args.log_file, args.max_backoff, args.retries, args.options)
         case "list":
-            return list_processes(args.watch)
+            return list_processes()
         case "stop":
             return stop_process(args.pid, args.force)
         case _:
