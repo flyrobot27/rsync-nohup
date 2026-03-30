@@ -156,7 +156,7 @@ def launch_worker_process(
     ]
 
     if log_file is not None:
-        cmd.extend(["--log-file", str(log_file)])
+        cmd.extend(["--log-file", str(log_file.resolve())])
 
     if options:
         cmd.append("--options")
